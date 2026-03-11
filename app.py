@@ -3,25 +3,31 @@ from dash import dcc, html
 import pandas as pd
 import plotly.express as px
 
-# cargar datos
+# =========================
+# Cargar datos
+# =========================
+
 df = pd.read_csv("notas_estudiantes.csv")
 
-# calcular promedio por estudiante
+# Calcular promedio por estudiante
 df["Promedio"] = df.drop(columns=["Nombre"]).mean(axis=1)
 
-# promedio por evaluación
-promedios_eval = df.drop(columns=["Nombre","Promedio"]).mean()
+# Promedio por evaluación
+promedios_eval = df.drop(columns=["Nombre", "Promedio"]).mean().reset_index()
+promedios_eval.columns = ["Evaluacion", "Promedio"]
 
-# app
-app = dash.Dash(__name__)
-server = app.server
+# Ranking
+ranking = df.sort_values("Promedio", ascending=False)
 
-# gráficos
+# =========================
+# Crear gráficos
+# =========================
+
 fig_promedio_estudiante = px.bar(
     df,
     x="Nombre",
     y="Promedio",
-    title="Promedio por estudiante",
+    title="Promedio por Estudiante",
     color="Promedio",
     color_continuous_scale="Blues"
 )
@@ -30,23 +36,35 @@ fig_distribucion = px.histogram(
     df,
     x="Promedio",
     nbins=10,
-    title="Distribución de promedios"
+    title="Distribución de Promedios"
 )
 
 fig_promedio_eval = px.bar(
-    x=promedios_eval.index,
-    y=promedios_eval.values,
-    labels={"x": "Evaluación", "y": "Promedio"},
-    title="Promedio por evaluación"
+    promedios_eval,
+    x="Evaluacion",
+    y="Promedio",
+    title="Promedio por Evaluación",
+    color="Promedio",
+    color_continuous_scale="Greens"
 )
 
-ranking = df.sort_values("Promedio", ascending=False)
+# =========================
+# Crear aplicación Dash
+# =========================
 
-# layout
+app = dash.Dash(__name__)
+server = app.server
+
+# =========================
+# Layout
+# =========================
+
 app.layout = html.Div([
-    
-    html.H1("Dashboard de Rendimiento Estudiantil", 
-            style={"textAlign":"center"}),
+
+    html.H1(
+        "Dashboard de Rendimiento Estudiantil",
+        style={"textAlign": "center"}
+    ),
 
     html.Div([
         dcc.Graph(figure=fig_promedio_estudiante)
@@ -60,20 +78,36 @@ app.layout = html.Div([
         dcc.Graph(figure=fig_promedio_eval)
     ]),
 
-    html.H2("Ranking de estudiantes"),
+    html.H2("Ranking de Estudiantes", style={"textAlign": "center"}),
 
-    html.Table([
-        html.Thead(
+    html.Table(
+
+        # Encabezado
+        [html.Thead(
             html.Tr([html.Th(col) for col in ranking.columns])
-        ),
-        html.Tbody([
+        )] +
+
+        # Filas
+        [html.Tbody([
             html.Tr([
                 html.Td(ranking.iloc[i][col]) for col in ranking.columns
             ]) for i in range(len(ranking))
-        ])
-    ], style={"margin":"auto", "width":"60%"})
+        ])],
+
+        style={
+            "margin": "auto",
+            "width": "70%",
+            "border": "1px solid black",
+            "textAlign": "center"
+        }
+
+    )
 
 ])
+
+# =========================
+# Ejecutar servidor
+# =========================
 
 if __name__ == "__main__":
     app.run(debug=True)
