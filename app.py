@@ -6,6 +6,7 @@ import plotly.express as px
 # =========================
 # Cargar datos
 # =========================
+# https://dash-test-jocu.onrender.com/
 
 df = pd.read_csv("notas_estudiantes.csv")
 
